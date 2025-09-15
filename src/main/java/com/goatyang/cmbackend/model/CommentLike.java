@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "comment_id"})
 )
 @DynamicInsert
-public class Comment_like {
+public class CommentLike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
