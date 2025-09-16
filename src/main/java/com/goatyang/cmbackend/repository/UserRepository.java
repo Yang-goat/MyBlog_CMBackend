@@ -29,8 +29,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByGithubId(Long githubId);
 
     // 检查用户名是否已存在（用于用户名唯一性验证）
-    boolean existsByUsername(String username);
+//    boolean existsByUsername(String username);
 
     // 检查邮箱是否已存在（用于邮箱唯一性验证）
-    boolean existsByEmail(String email);
+//    boolean existsByEmail(String email);
 }

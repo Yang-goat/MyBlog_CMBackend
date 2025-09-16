@@ -1,62 +1,93 @@
 package com.goatyang.cmbackend.repository;
 
 import com.goatyang.cmbackend.model.Comment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 评论数据访问层接口
- * 用于与数据库交互，处理评论相关的CRUD操作
- */
 @Repository
-// 继承JpaRepository<Comment, Long>，泛型为实体类Comment和主键类型Long
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /**
-     * 根据文章路径查询评论（核心接口：支撑前端“某文章的评论列表”）
-     * 支持分页和排序（如按创建时间倒序，最新评论在前）
-     * @param articlePath 文章路径（如"/articles/java-basics"）
-     * @param pageable 分页参数（页码、每页条数、排序规则）
-     * @return 分页的评论列表
+     * 查询所有评论并加载用户信息
      */
-    Page<Comment> findByArticlePath(String articlePath, Pageable pageable);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user ORDER BY c.createdAt DESC")
+    List<Comment> findAllWithUser();
 
     /**
-     * 根据用户ID查询该用户发布的所有评论（用于“用户个人中心-我的评论”）
-     * @param userId 用户ID
-     * @param pageable 分页参数
-     * @return 分页的评论列表
+     * 根据文章路径查询评论（带用户信息）
      */
-    Page<Comment> findByUserId(Long userId, Pageable pageable);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user " +
+            "WHERE c.articlePath = :articlePath ORDER BY c.createdAt DESC")
+    List<Comment> findByArticlePath(@Param("articlePath") String articlePath);
 
     /**
-     * 统计某篇文章的评论总数（用于前端显示“共X条评论”）
-     * @param articlePath 文章路径
-     * @return 评论总数
+     * 根据用户ID查询该用户发布的所有评论（带用户信息）
      */
-    long countByArticlePath(String articlePath);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user " +
+            "WHERE c.user.id = :userId ORDER BY c.createdAt DESC")
+    List<Comment> findByUserId(@Param("userId") Long userId);
 
     /**
-     * 根据评论ID查询评论详情（用于“查看单条评论”或“关联点赞信息”）
-     * @param commentId 评论ID
-     * @return 评论详情（包含内容、用户ID、文章路径等）
+     * 查询某个时间范围内的评论（带用户信息）
      */
-    Optional<Comment> findByCommentId(Long commentId);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user " +
+            "WHERE c.createdAt BETWEEN :startTime AND :endTime ORDER BY c.createdAt DESC")
+    List<Comment> findByCreatedAtBetween(@Param("startTime") LocalDateTime startTime,
+                                         @Param("endTime") LocalDateTime endTime);
 
     /**
-     * 批量删除某用户的所有评论（用于“删除用户时级联删除其评论”）
-     * @param userId 用户ID
+     * 统计某篇文章的评论总数
      */
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.articlePath = :articlePath")
+    long countByArticlePath(@Param("articlePath") String articlePath);
+
+    /**
+     * 根据评论ID查询评论详情（带用户信息，避免懒加载）
+     */
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user WHERE c.commentId = :commentId")
+    Optional<Comment> findByCommentIdWithUser(@Param("commentId") Long commentId);
+
+    /**
+     * 批量删除某用户的所有评论
+     */
+    @Transactional
     void deleteByUserId(Long userId);
 
     /**
-     * 批量删除某篇文章的所有评论（用于“删除文章时级联删除其评论”）
-     * @param articlePath 文章路径
+     * 批量删除某篇文章的所有评论
      */
+    @Transactional
     void deleteByArticlePath(String articlePath);
+
+    /**
+     * 为指定评论的点赞数加1
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Comment c SET c.likeCount = c.likeCount + 1 WHERE c.commentId = :commentId")
+    void incrementLikeCount(@Param("commentId") Long commentId);
+
+    /**
+     * 为指定评论的点赞数减1（确保点赞数不会小于0）
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Comment c SET c.likeCount = GREATEST(c.likeCount - 1, 0) WHERE c.commentId = :commentId")
+    void decrementLikeCount(@Param("commentId") Long commentId);
+
+    /**
+     * 重置指定评论的点赞数为0
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Comment c SET c.likeCount = 0 WHERE c.commentId = :commentId")
+    void resetLikeCount(@Param("commentId") Long commentId);
 }
