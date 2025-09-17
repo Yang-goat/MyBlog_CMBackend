@@ -5,10 +5,10 @@ import com.goatyang.cmbackend.model.User;
 import com.goatyang.cmbackend.repository.CommentRepository;
 import com.goatyang.cmbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +22,14 @@ public class CommentService {
 
     /** 创建评论 */
     public Comment createComment(Long userId, String articlePath, String content) {
+        // 查找用户并验证用户存在性
         User user = userRepository.findByGithubId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+
+        // 检查用户是否有评论权限
+        if (!user.getComPermissions()) {
+            throw new AccessDeniedException("当前用户没有评论权限");
+        }
 
         Comment comment = new Comment();
         comment.setUser(user);
