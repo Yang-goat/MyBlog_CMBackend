@@ -29,9 +29,9 @@ public class CommentLikeController {
     }
 
     /** 取消点赞 */
-    @PatchMapping("/cancel")
-    public ApiResponse<Map<String, Object>> unlikeComment(@RequestParam Long userId,
-                                                          @RequestParam Long commentId) {
-        return ApiResponse.success(commentLikeService.unlikeComment(userId, commentId));
-    }
+//    @PatchMapping("/cancel")
+//    public ApiResponse<Map<String, Object>> unlikeComment(@RequestParam Long userId,
+//                                                          @RequestParam Long commentId) {
+//        return ApiResponse.success(commentLikeService.unlikeComment(userId, commentId));
+//    }
 }

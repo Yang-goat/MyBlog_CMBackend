@@ -39,18 +39,9 @@ public class CommentLikeService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("评论不存在"));
 
-        CommentLike like = commentLikeRepository.findByCommentIdAndUserIdWithFetch(commentId, userId)
-                .orElse(null);
-
-        if (like != null && !like.getIsCanceled()) {
-            throw new IllegalArgumentException("用户已点过赞");
-        }
-
-        if (like == null) {
-            like = new CommentLike();
-            like.setUser(user);
-            like.setComment(comment);
-        }
+        CommentLike like = new CommentLike();
+        like.setUser(user);
+        like.setComment(comment);
         like.setIsCanceled(false);
         // 评论总点赞数+1
         commentRepository.incrementLikeCount(commentId);
@@ -60,22 +51,22 @@ public class CommentLikeService {
     }
 
     /** 取消点赞 */
-    @Transactional
-    public Map<String, Object> unlikeComment(Long userId, Long commentId) {
-        CommentLike like = commentLikeRepository.findByCommentIdAndUserIdWithFetch(commentId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("点赞记录不存在"));
-
-        if (like.getIsCanceled()) {
-            throw new IllegalArgumentException("该点赞已取消");
-        }
-
-        like.setIsCanceled(true);
-        // 评论总数-1
-        commentRepository.decrementLikeCount(commentId);
-        commentLikeRepository.save(like);
-
-        return buildLikeInfo(userId, commentId);
-    }
+//    @Transactional
+//    public Map<String, Object> unlikeComment(Long userId, Long commentId) {
+//        CommentLike like = commentLikeRepository.findByCommentIdAndUserIdWithFetch(commentId, userId)
+//                .orElseThrow(() -> new IllegalArgumentException("点赞记录不存在"));
+//
+//        if (like.getIsCanceled()) {
+//            throw new IllegalArgumentException("该点赞已取消");
+//        }
+//
+//        like.setIsCanceled(true);
+//        // 评论总数-1
+//        commentRepository.decrementLikeCount(commentId);
+//        commentLikeRepository.save(like);
+//
+//        return buildLikeInfo(userId, commentId);
+//    }
 
     /** 获取某评论的所有点赞记录 */
     public List<CommentLike> getLikesByCommentId(Long commentId) {
@@ -98,9 +89,9 @@ public class CommentLikeService {
         if (!likes.isEmpty()) {
             // 对于每条有效的点赞记录，减少对应评论的点赞数
             for (CommentLike like : likes) {
-                if (!like.getIsCanceled()) {
+//                if (!like.getIsCanceled()) {
                     commentRepository.decrementLikeCount(like.getComment().getCommentId());
-                }
+//                }
             }
             commentLikeRepository.deleteAll(likes);
             deletedCount = likes.size();
